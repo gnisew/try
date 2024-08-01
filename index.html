@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本取代工具</title>
+    <style>
+
+
+textarea {
+    width: 95%;
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Flex container for input groups */
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.input-group select {
+    margin-left: 10px;
+    min-width: 150px;
+}
+
+/* Styles for visible and hidden states */
+.show {
+    display: block;
+}
+
+.hide {
+    display: none;
+}
+
+.regexChars{
+   padding: 0px 0px 0px 10px;
+}
+
+  </style>
+</head>
+<body>
+    <h1>文本取代工具</h1>
+    <textarea id="id_A" rows="10" cols="50" placeholder="在這裡輸入文本..."></textarea>
+    <br><br>
+    <textarea id="id_B" rows="10" cols="50" placeholder="取代後的文本將顯示在這裡..."></textarea>
+    <br><br>
+    <button id="replaceButton">取代</button>
+    <button id="undoButton">還原</button>
+    <button id="redoButton">重做</button>
+
+    <div id="replaceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>取代文本</h2>
+            <div class="input-group">
+                <label for="replace">取　代：</label>
+                <input type="text" id="replace" name="replace">
+            </div>
+            <div class="input-group">
+                <label for="replaceWith">取代為：</label>
+                <input type="text" id="replaceWith" name="replaceWith">
+            </div>
+            <div class="input-group">
+                <input type="checkbox" id="useRegex" name="useRegex" checked>
+                <select id="regexCharsReplace" class="regexChars">
+                    <option value="">正則字元</option>
+                    <option value="^">^ 開頭、否定</option>
+                    <option value="$">$ 結尾、指定$1</option>
+                    <option value="*">* 零或多次</option>
+                    <option value="+">+ 一或多次</option>
+                    <option value="?">? 零或一次</option>
+                    <option value=".">. 任一字元</option>
+                    <option value="(">( 左圓</option>
+                    <option value=")">) 右圓</option>
+                    <option value="()">() 集合(含) (pattern)</option>
+                    <option value="(?:)">(?:) 集合(不含) x(?:pattern) 配x</option>
+                    <option value="(?=)">(?=) 其後為 x(?=y) 配x</option>
+                    <option value="(?!)">(?!) 其後非 x(?!y) 配x</option>
+                    <option value="(?<=)">(?<=) 其前為 (?<=y)x 配x</option>
+					<option value="(?&lt;!)">(?&lt;!) 其前非 (?&lt;!y)x 配x</option>
+                    <option value="|">| 或 x|y</option>
+                    <option value="{}">{ } 次數</option>
+                    <option value="{,}">{,} 至少至多</option>
+                    <option value="[-]">[-] 範圍內</option>
+                    <option value="[^-]">[^-] 範圍外</option>
+                    <option value="\d">\d 數字 [0-9]</option>
+                    <option value="\D">\D 非數字 [^0-9]</option>
+                    <option value="\w">\w 單詞 [A-Za-z0-9_]</option>
+                    <option value="\W">\W 非單詞 [^A-Za-z0-9_]</option>
+                    <option value="\s">\s 空白字元</option>
+                    <option value="\S">\S 非空白字元</option>
+                    <option value="\n">\n 換行字元</option>
+                    <option value="\t">\t 製表符TAB</option>
+                    <option value="\b">\b 邊界</option>
+                    <option value="\">\ 反斜線</option>
+                    <option value="\1">\1 引用</option>
+                    <option value="\2">\2 引用</option>
+                    <option value="\3">\3 引用</option>
+                    <option value="&lt;">&lt; 左尖</option>
+                    <option value="&gt;">&gt; 右尖</option>
+					<option value="{h}">{h} 漢字</option>
+					<option value="{H}">{H} 非漢字</option>
+					<option value="{b}">{b} 全形標點</option>
+					<option value="{B}">{B} 非全形標點</option>
+					<option value="{bb}">{bb} 半形標點</option>
+					<option value="{BB}">{BB} 非半形標點</option>
+					<option value="{s}">{s} 空格與Tab</option>
+					<option value="{S}">{s} 非空格與Tab</option>
+                </select>
+                <select id="regexCharsReplaceWith" class="regexChars hide">
+                    <option value="">正則字元</option>
+                    <option value="\n">\n 換行字元</option>
+                    <option value="\t">\t 製表符TAB</option>
+                    <option value="$1">$1 指定</option>
+                    <option value="$2">$2 指定</option>
+                    <option value="$3">$3 指定</option>
+                    <option value="$4">$4 指定</option>
+                    <option value="$5">$5 指定</option>
+                    <option value="$">$ 指定</option>
+                    <option value="(">( 左圓</option>
+                    <option value=")">) 右圓</option>
+                    <option value="[">[ 左方</option>
+                    <option value="]">] 右方</option>
+                    <option value="{">{ 左花</option>
+                    <option value="}">} 右花</option>
+                    <option value="&lt;">&lt; 左尖</option>
+                    <option value="&gt;">&gt; 右尖</option>
+                </select>
+            </div>
+            <button id="confirmButton">確定</button>
+            <button id="cancelButton">取消</button>
+        </div>
+    </div>
+
+
+    <script>
+		
+document.addEventListener("DOMContentLoaded", function () {
+    const replaceButton = document.getElementById("replaceButton");
+    const replaceModal = document.getElementById("replaceModal");
+    const closeModal = document.getElementsByClassName("close")[0];
+    const confirmButton = document.getElementById("confirmButton");
+    const cancelButton = document.getElementById("cancelButton");
+    const undoButton = document.getElementById("undoButton");
+    const redoButton = document.getElementById("redoButton");
+    const textAreaA = document.getElementById("id_A");
+    const regexCharsReplace = document.getElementById("regexCharsReplace");
+    const regexCharsReplaceWith = document.getElementById("regexCharsReplaceWith");
+    const useRegex = document.getElementById("useRegex");
+    const replaceInput = document.getElementById("replace");
+    const replaceWithInput = document.getElementById("replaceWith");
+
+    let history = [];
+    let redoStack = [];
+
+    function saveHistory() {
+        history.push(textAreaA.value);
+        if (history.length > 100) {
+            history.shift();
+        }
+        redoStack = [];
+    }
+
+    textAreaA.addEventListener('input', saveHistory);
+    textAreaA.addEventListener('cut', saveHistory);
+    textAreaA.addEventListener('paste', saveHistory);
+    textAreaA.addEventListener('keydown', function(event) {
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+            saveHistory();
+        }
+    });
+
+    function toggleModal(show) {
+        replaceModal.classList.toggle('show', show);
+        replaceModal.classList.toggle('hide', !show);
+    }
+
+    replaceButton.addEventListener('click', () => toggleModal(true));
+    closeModal.addEventListener('click', () => toggleModal(false));
+    cancelButton.addEventListener('click', () => toggleModal(false));
+
+    window.addEventListener('click', (event) => {
+        if (event.target === replaceModal) {
+            toggleModal(false);
+        }
+    });
+
+    confirmButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        const textAreaB = document.getElementById("id_B");
+        let replaceText = replaceInput.value;
+        let replaceWithText = replaceWithInput.value;
+        const useRegexChecked = useRegex.checked;
+
+        let textA = textAreaA.value;
+        let textB;
+
+	replaceText = replaceText.replace(/{h}/g,"[\u3007\u3400-\u4DB5\u4E00-\u9FCB\uE815-\uE864\uD840-\uD87F][\uDC00-\uDFFF]?"); //中文漢字;
+	replaceText = replaceText.replace(/\{\^h}|{H}/g,"([!-㏕]|[︰-￭])"); // 非中文漢字;
+
+	replaceText = replaceText.replace(/{mail}/g,"([^@ \t\r\n]+@[^@ \t\r\n]+\\.[^@ \t\r\n]+)");  //e-mail信箱 [^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+;
+	replaceText = replaceText.replace(/{url}/g,"(((https|http|ftp|rtsp|mms)?:\/\/)([^\\s]+))"); //網址 ((https|http|ftp|rtsp|mms)?:\/\/)([^\s]+);
+	replaceText = replaceText.replace(/{html}/g,"(<\\s*(\\S+)(\\s[^>]*)?>)"); //HTML <標記> <\s*(\S+)(\s[^>]*)?>;
+	replaceText = replaceText.replace(/{htmlall}/g,"(<\\s*(\\S+)(\\s[^>]*)?>[\\s\\S]*<\\s*\/\\1\\s*>)"); //HTML <標記>...</標記> <\s*(\S+)(\s[^>]*)?>[\s\S]*<\s*\/\1\s*>;
+
+	replaceText = replaceText.replace(/{y}/g,"([A-u]+)");
+	replaceText = replaceText.replace(/{~}/g,"([A-u]+[1-9])");
+	replaceText = replaceText.replace(/{v}/g,"([aeiou])");
+	replaceText = replaceText.replace(/{V}/g,"([^aeiou])");
+
+	replaceText = replaceText.replace(/{Az}/g,"([A-Za-z])");
+	replaceText = replaceText.replace(/{A9}/g,"([A-Za-z0-9])");
+	replaceText = replaceText.replace(/{a9}/g,"([a-z0-9])");
+	replaceText = replaceText.replace(/{AZ}/g,"([A-Z])");
+	replaceText = replaceText.replace(/{az}/g,"([a-z])");
+
+	replaceText = replaceText.replace(/{\^Az}/g,"([^A-Za-z])");
+	replaceText = replaceText.replace(/{\^A9}/g,"([^A-Za-z0-9])");
+	replaceText = replaceText.replace(/{\^a9}/g,"([^a-z0-9])");
+	replaceText = replaceText.replace(/{\^AZ}/g,"([^A-Z])");
+	replaceText = replaceText.replace(/{\^az}/g,"([^a-z])");
+
+	replaceText = replaceText.replace(/{ss}/g,"([ 　\\t\\r\\n\\v\\f])");  // 所有空白字元;
+	replaceText = replaceText.replace(/{s}/g,"([ 　\\t\\v])");  // 空格、製表字元;
+	replaceText = replaceText.replace(/{\^ss}|{SS}/g,"([^ 　\\t\\r\\n\\v\\f])");  // 非所有空白字元;
+	replaceText = replaceText.replace(/{\^s}|{S}/g,"([ 　\\t\\v])");  // 非空格、製表字元;
+
+	replaceText = replaceText.replace(/{biaodian}|{b}/g,"([。，、；：！？「」『』（）《》〈〉〔〕【】〖〗︵︶︹︺︿﹀︽︾﹁﹂﹃﹄｡─…．～﹗﹙﹚﹐﹑﹒︰﹕﹔])");  //標點;
+	replaceText = replaceText.replace(/{^biaodian}|{^b}|{B}/g,"([^。，、；：！？「」『』（）《》〈〉〔〕【】〖〗︵︶︹︺︿﹀︽︾﹁﹂﹃﹄｡─…．～﹗﹙﹚﹐﹑﹒︰﹕﹔])");  //非標點;
+
+	replaceText = replaceText.replace(/{bb}/g,"([,.?!\"\':;])");  //標點半形;
+	replaceText = replaceText.replace(/{\^bb}|{BB}/g,"([^,.?!\"\':;])");  //非標點半形;
+
+
+        if (useRegexChecked) {
+            const regex = new RegExp(replaceText, 'g');
+            replaceWithText = replaceWithText.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+            textB = textA.replace(regex, replaceWithText);
+        } else {
+            textB = textA.split(replaceText).join(replaceWithText);
+        }
+
+        textAreaB.value = textB;
+        toggleModal(false);
+    });
+
+    undoButton.addEventListener('click', () => {
+        if (history.length > 0) {
+            redoStack.push(textAreaA.value);
+            textAreaA.value = history.pop();
+        }
+    });
+
+    redoButton.addEventListener('click', () => {
+        if (redoStack.length > 0) {
+            history.push(textAreaA.value);
+            textAreaA.value = redoStack.pop();
+        }
+    });
+
+    function insertAtCursor(input, text) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.slice(0, start) + text + input.value.slice(end);
+        input.selectionStart = input.selectionEnd = start + text.length;
+        input.focus();
+    }
+
+    replaceInput.addEventListener('focus', function() {
+        regexCharsReplace.classList.remove('hide');
+        regexCharsReplaceWith.classList.add('hide');
+    });
+
+    replaceWithInput.addEventListener('focus', function() {
+        regexCharsReplaceWith.classList.remove('hide');
+        regexCharsReplace.classList.add('hide');
+    });
+
+    useRegex.addEventListener('change', function() {
+        const isChecked = useRegex.checked;
+        regexCharsReplace.disabled = !isChecked;
+        regexCharsReplaceWith.disabled = !isChecked;
+    });
+
+    regexCharsReplace.addEventListener('change', function() {
+        insertAtCursor(replaceInput, regexCharsReplace.value);
+        regexCharsReplace.value = '';
+    });
+
+    regexCharsReplaceWith.addEventListener('change', function() {
+        insertAtCursor(replaceWithInput, regexCharsReplaceWith.value);
+        regexCharsReplaceWith.value = '';
+    });
+});
+
+
+
+    </script>
+</body>
+</html>
